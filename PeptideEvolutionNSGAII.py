@@ -148,69 +148,81 @@ class NSGA_II:
 
     def perform_non_dominated_sort(self, population):
         """Divide the population into pareto fronts.
-
+    
         Parameters
         ----------
         population : list
             List of self.Route objects.
-
+    
         Returns
         -------
         List of lists of self.Route objects.
             E.g., [[Route#1, Route#2, ...], ...]
         """
-
+    
+        # Create a dictionary to store the count of each peptide.
+        peptide_counts = {}
+        for peptide in population:
+            peptide_string = peptide.peptide_string
+            if peptide_string in peptide_counts:
+                peptide_counts[peptide_string] += 1
+            else:
+                peptide_counts[peptide_string] = 1
+    
+        # Add a penalty to the fitness function value of peptides that occur more than once.
+        for peptide in population:
+            peptide_string = peptide.peptide_string
+            count = peptide_counts[peptide_string]
+            if count > 1:
+                penalty = count * 0.2  # Adjust the penalty factor as needed.
+                peptide.ff_amp_probability -= penalty
+    
         # list_of_dominated_indices[n] will store indices of solutions
         # population[n] dominates over.
         list_of_dominated_indices = [[] for _ in population]
-
+    
         # domination_count[n] will store how many solutions dominate over
         # population[n].
         domination_count = np.zeros(len(population))
-
+    
         pareto_fronts = [[]]
-
+    
         for i, _ in enumerate(population):
             for j, _ in enumerate(population):
-
+    
                 if i == j:
                     continue
-
+    
                 # Check if one solutions dominates over the other, or they
                 # are equal.
-
+    
                 if population[i].ff_amp_probability >= population[j].ff_amp_probability:
                     # In this case, population[i] dominates over population[j].
                     list_of_dominated_indices[i].append(j)
                 elif population[j].ff_amp_probability > population[i].ff_amp_probability:
                     # In this case, population[j] dominates over population[i].
                     domination_count[i] += 1
-                # else:
-                #     # The only remaining case is that population[i] and population[j]
-                #     # are equivalent, so we do nothing.
-                #     pass
-
+    
             if domination_count[i] == 0:
                 # Solution population[i] is not dominated by any other solution,
                 # therefore it belongs to the first (best) pareto front.
                 population[i].rank = 0
                 pareto_fronts[0].append(i)
-
-
+    
         i = 0
         # Iterate until each solution is assigned to a pareto front.
         while len(pareto_fronts[i]) > 0:
             # A list where solutions that belong to the next pareto front
             # will be saved.
             next_pareto_front = []
-
+    
             # Iterate over solutions on the last pareto front.
             for j in pareto_fronts[i]:
                 for k in list_of_dominated_indices[j]:
                     # Reduce domination count for the solutions that are dominated
                     # by the individuals on the current pareto front.
                     domination_count[k] -= 1
-
+    
                     # If the solution is no longer dominated, that is, all the
                     # solutions that dominated over the current solution were
                     # deployed to pareto fronts, add current solution to the
@@ -218,28 +230,28 @@ class NSGA_II:
                     if domination_count[k] == 0:
                         population[k].rank = i + 1
                         next_pareto_front.append(k)
-
+    
             # Jump to next pareto front.
             i += 1
-
+    
             # Add current pareto front to the list of all pareto fronts.
             pareto_fronts.append(next_pareto_front)
-
+    
         # Last pareto front is empty (check 'while' condition above), so
         # we remove it.
         del pareto_fronts[-1]
-
+    
         # Turn pareto front indices into objects; Replace index with the
         # corresponding object in 'population'.
-
+    
         object_pareto_fronts = []
-
+    
         for pareto_front in pareto_fronts:
             current_front = []
             for index in pareto_front:
                 current_front.append(population[index])
             object_pareto_fronts.append(current_front)
-
+    
         return object_pareto_fronts
 
 
@@ -310,6 +322,7 @@ class NSGA_II:
             os.remove('in.txt')
 
         for peptide_string, ff_amp_probability in peptide_and_ff_amp_probability:
+            print("Peptide: ", peptide_string)
             offspring_peptides.append(self.Peptide(list(peptide_string), peptide_string, float(ff_amp_probability)))
 
         return offspring_peptides
