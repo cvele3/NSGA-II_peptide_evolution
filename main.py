@@ -25,12 +25,12 @@ def visualize_pareto_fronts(pareto_fronts):
 GA = NSGA_II(
     lowerRange=8,
     upperRange=15,
-    numberOfRandomlyGeneratedPeptides=10,
-    population_size=10,
-    offspring_size=3,
-    num_generations=20,
+    numberOfRandomlyGeneratedPeptides=30,
+    population_size=30,
+    offspring_size=10,
+    num_generations=30,
     num_solutions_tournament=4,
-    mutation_probability=0.2
+    mutation_probability=0.1
 )
 
 pareto_fronts = GA.calculate()
