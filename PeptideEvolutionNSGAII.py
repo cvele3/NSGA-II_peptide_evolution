@@ -6,7 +6,6 @@ import FitnessFunctionScraper
 import os
 import Mutations
 
-
 class NSGA_II:
 
     # Class Peptide is used to conveniently store all info about a solution.
@@ -16,9 +15,9 @@ class NSGA_II:
 
                        Parameters
                        ----------
-                       peptide_list : string
-                           String of peptides aminoacids.
-                           E.g. ADKRSMEAC
+                       peptide_list : list
+                           List of peptides aminoacids.
+                           E.g. ['A','D','K','R','S','M','E','A','C'...]
                        peptide_string : string
                            Peptide label.
                        ff_amp_probability : float
@@ -43,11 +42,12 @@ class NSGA_II:
     def __init__(self,
                  lowerRange,
                  upperRange,
-                 numberOfRandomlyGeneratedPeptides,
+                 population_size,
                  offspring_size,
                  num_generations,
                  num_solutions_tournament,
-                 mutation_probability
+                 mutation_probability,
+                 penalty_function_reducer
                  ):
         """Save the forwarded arguments.
 
@@ -57,7 +57,7 @@ class NSGA_II:
             The number of min individual length
         upperRange : int
             The number of max individual length
-        numberOfRandomlyGeneratedPeptides : int
+        population_size : int
             The number of individuals in the population.
         offspring_size : int
             The number of new individuals to create in each generation.
@@ -67,15 +67,18 @@ class NSGA_II:
             The number of individuals that are picked for tournament selection.
         mutation_probability : float
             The probability of a mutation occurring.
+        penalty_function_reducer : float
+            Number which is used for reducing AMP probability if sequences are the same.
         """
 
         self.lowerRange = lowerRange
         self.upperRange = upperRange
-        self.numberOfRandomlyGeneratedPeptides = numberOfRandomlyGeneratedPeptides
+        self.population_size = population_size
         self.offspring_size = offspring_size
         self.num_generations = num_generations
         self.num_solutions_tournament = num_solutions_tournament
         self.mutation_probability = mutation_probability
+        self.penalty_function_reducer = penalty_function_reducer
 
 
     def calculate(self):
@@ -88,13 +91,13 @@ class NSGA_II:
         List of pareto fronts.
             Each pareto front is a list containing 3 values for each solution:
             
-            (Peptide aminoacids string,
+            (Peptide aminoacids list,
              Peptide string,
              Value of fitness function that represent possibility of peptide having AMP properties).
         """
 
         generation_number = 1
-        population = self.generate_random_population(self.lowerRange, self.upperRange, self.numberOfRandomlyGeneratedPeptides)
+        population = self.generate_random_population(self.lowerRange, self.upperRange, self.population_size)
 
         non_dominated_sorted_population = self.perform_non_dominated_sort(population)
 
@@ -135,10 +138,10 @@ class NSGA_II:
                 ]
 
 
-    def generate_random_population(self, lowerRange, upperRange, numberOfRandomlyGeneratedPeptides):
+    def generate_random_population(self, lowerRange, upperRange, population_size):
         """Generate N random individuals within given range.
 
-                Use self.numberOfRandomlyGeneratedPeptides.
+                Use self.population_size.
 
                 Parameters
                 -------
@@ -146,14 +149,14 @@ class NSGA_II:
                     Lower limit of sequence length.
                 upperRange : int
                     Upper limit of sequence length.
-                numberOfRandomlyGeneratedPeptides : int
+                population_size : int
                     Population size.
 
                 Returns
                 -------
                 List of self.Peptide objects.
                 """
-        peptides = RandomGenerator.generate_random_peptides(lowerRange, upperRange, numberOfRandomlyGeneratedPeptides)
+        peptides = RandomGenerator.generate_random_peptides(lowerRange, upperRange, population_size)
 
         list_of_peptide_objects = []
 
@@ -201,7 +204,7 @@ class NSGA_II:
             peptide_string = peptide.peptide_string
             count = peptide_counts[peptide_string]
             if count > 1:
-                penalty = count * 0.2  # Adjust the penalty factor as needed.
+                penalty = peptide.ff_amp_probability * self.penalty_function_reducer  # Adjust the penalty factor as needed.
                 peptide.ff_amp_probability -= penalty
     
         # list_of_dominated_indices[n] will store indices of solutions
@@ -418,12 +421,12 @@ class NSGA_II:
 
                 Parameters
                 ----------
-                child_peptide_list : string,
-                    Peptide aminoacids.
+                child_peptide_list : list,
+                    List of peptide aminoacids.
 
                 Returns
                 -------
-                String, A modified peptide aminoacids.
+                List, A modified peptide aminoacids list.
                 """
 
         randInt = np.random.randint(0, 4)
@@ -447,7 +450,7 @@ class NSGA_II:
     def next_generation(self, non_dominated_sorted_population):
         """Select individuals for the next generation.
 
-        Use self.numberOfRandomlyGeneratedPeptides.
+        Use self.population_size.
 
         Parameters
         ----------
@@ -463,15 +466,15 @@ class NSGA_II:
         next_generation = []
 
         for pareto_front in non_dominated_sorted_population:
-            if len(pareto_front) + len(next_generation) <= self.numberOfRandomlyGeneratedPeptides:
+            if len(pareto_front) + len(next_generation) <= self.population_size:
                 # If the whole pareto front fits into next generation, add it.
                 next_generation.extend(pareto_front)
-            elif self.numberOfRandomlyGeneratedPeptides - len(next_generation) > 0:
+            elif self.population_size - len(next_generation) > 0:
                 # Otherwise, add the individuals with the highest crowding distance
                 # to preserve genetic diversity.
                 pareto_front.sort(key=lambda solution: solution.distance)
                 next_generation.extend(
-                    pareto_front[-(self.numberOfRandomlyGeneratedPeptides-len(next_generation)):]
+                    pareto_front[-(self.population_size-len(next_generation)):]
                 )
                 break
 
