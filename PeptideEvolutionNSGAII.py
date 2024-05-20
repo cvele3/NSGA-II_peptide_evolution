@@ -32,7 +32,6 @@ class NSGA_II:
     def __init__(self,
                  lowerRange,
                  upperRange,
-                 numberOfRandomlyGeneratedPeptides,
                  population_size,
                  offspring_size,
                  num_generations,
@@ -57,7 +56,6 @@ class NSGA_II:
 
         self.lowerRange = lowerRange
         self.upperRange = upperRange
-        self.numberOfRandomlyGeneratedPeptides = numberOfRandomlyGeneratedPeptides
         self.population_size = population_size
         self.offspring_size = offspring_size
         self.num_generations = num_generations
@@ -84,7 +82,7 @@ class NSGA_II:
         """
 
         generation_number = 1
-        population = self.generate_random_population(self.lowerRange, self.upperRange, self.numberOfRandomlyGeneratedPeptides)
+        population = self.generate_random_population(self.lowerRange, self.upperRange)
 
         non_dominated_sorted_population = self.perform_non_dominated_sort(population)
 
@@ -125,8 +123,8 @@ class NSGA_II:
                 ]
 
 
-    def generate_random_population(self, lowerRange, upperRange, numberOfRandomlyGeneratedPeptides):
-        peptides = RandomGenerator.generate_random_peptides(lowerRange, upperRange, numberOfRandomlyGeneratedPeptides)
+    def generate_random_population(self, lowerRange, upperRange):
+        peptides = RandomGenerator.generate_random_peptides(lowerRange, upperRange, self.population_size)
 
         list_of_peptide_objects = []
 
@@ -171,10 +169,11 @@ class NSGA_II:
     
         # Add a penalty to the fitness function value of peptides that occur more than once.
         for peptide in population:
+            print("Peptide: ", peptide.peptide_string, "   FF:", peptide.ff_amp_probability)
             peptide_string = peptide.peptide_string
             count = peptide_counts[peptide_string]
             if count > 1:
-                penalty = count * 0.2  # Adjust the penalty factor as needed.
+                penalty = count * 0.5  # Adjust the penalty factor as needed.
                 peptide.ff_amp_probability -= penalty
     
         # list_of_dominated_indices[n] will store indices of solutions
@@ -322,7 +321,6 @@ class NSGA_II:
             os.remove('in.txt')
 
         for peptide_string, ff_amp_probability in peptide_and_ff_amp_probability:
-            print("Peptide: ", peptide_string)
             offspring_peptides.append(self.Peptide(list(peptide_string), peptide_string, float(ff_amp_probability)))
 
         return offspring_peptides
@@ -385,7 +383,6 @@ class NSGA_II:
 
     def mutate(self, child_city_list):
         randInt = np.random.randint(0, 4)
-        print("Mutation type: ", randInt)
 
         if randInt == 0:
             child_city_list = Mutations.add_amino_acid(child_city_list)

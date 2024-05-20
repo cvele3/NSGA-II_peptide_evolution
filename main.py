@@ -10,27 +10,26 @@ def visualize_pareto_fronts(pareto_fronts):
     ax.yaxis.set_major_locator(MaxNLocator(integer=True))
 
     plt.title("Prikaz pareto fronti")
-    plt.xlabel("Duljina puta")
-    plt.ylabel("Abecedne greške")
+    plt.xlabel("Peptide Index")
+    plt.ylabel("Peptide Value (ff_amp_probability)")
 
     colors = ["#"+''.join([np.random.choice(list('0123456789ABCDEF')) for _ in range(6)])
               for _ in pareto_fronts]
 
     for front_index, front in enumerate(pareto_fronts):
-        for _, ff_path_length, ff_order in front:
-            plt.scatter(ff_path_length, ff_order, c=colors[front_index])
+        for _, _, ff_amp_probability  in front:
+            plt.scatter(front_index, ff_amp_probability, c=colors[front_index])
     plt.show()
 
 
 GA = NSGA_II(
     lowerRange=8,
     upperRange=15,
-    numberOfRandomlyGeneratedPeptides=30,
-    population_size=30,
-    offspring_size=10,
-    num_generations=30,
-    num_solutions_tournament=4,
-    mutation_probability=0.1
+    population_size=100,
+    offspring_size=5,
+    num_generations=10,
+    num_solutions_tournament=2,
+    mutation_probability=0.2
 )
 
 pareto_fronts = GA.calculate()

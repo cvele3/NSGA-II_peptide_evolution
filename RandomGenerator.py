@@ -8,3 +8,9 @@ def generate_random_peptides(lowerRange, upperRange, numberOfRandomlyGeneratedPe
         peptide_sequence = random.choices(AMINO_ACIDS, k=length)
         peptides.append(peptide_sequence)
     return peptides
+
+def generate_random_peptide(lowerRange, upperRange):
+    length = random.randint(lowerRange, upperRange)
+    peptide_sequence = random.choices(AMINO_ACIDS, k=length)
+    
+    return peptide_sequence
