@@ -10,8 +10,8 @@ def visualize_pareto_fronts(pareto_fronts):
     ax.yaxis.set_major_locator(MaxNLocator(integer=True))
 
     plt.title("Prikaz pareto fronti")
-    plt.xlabel("Duljina puta")
-    plt.ylabel("Abecedne greške")
+    plt.xlabel("AMP properties probability")
+    plt.ylabel("Toxic levels")
 
     colors = ["#"+''.join([np.random.choice(list('0123456789ABCDEF')) for _ in range(6)])
               for _ in pareto_fronts]
@@ -26,7 +26,6 @@ GA = NSGA_II(
     lowerRange=8,
     upperRange=15,
     numberOfRandomlyGeneratedPeptides=30,
-    population_size=30,
     offspring_size=10,
     num_generations=30,
     num_solutions_tournament=4,

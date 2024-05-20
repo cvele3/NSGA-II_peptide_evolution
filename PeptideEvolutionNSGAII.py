@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-
 import numpy as np
 import RandomGenerator
 import FitnessFunctionScraper
@@ -9,12 +8,24 @@ import Mutations
 
 
 class NSGA_II:
-    # A comprehensible NSGA-II paper: https://web.njit.edu/~horacio/Math451H/download/Seshadri_NSGA-II.pdf
 
-
-    # Class Route is used to conveniently store all info about a solution.
+    # Class Peptide is used to conveniently store all info about a solution.
     class Peptide:
         def __init__(self, peptide_list, peptide_string, ff_amp_probability):
+            """Store information about a single solution.
+
+                       Parameters
+                       ----------
+                       peptide_list : string
+                           String of peptides aminoacids.
+                           E.g. ADKRSMEAC
+                       peptide_string : string
+                           Peptide label.
+                       ff_amp_probability : float
+                           The possibility that antimicrobial peptide have antimicrobial properties.
+
+                       """
+
             self.peptide_list = peptide_list
             self.peptide_string = peptide_string
             self.ff_amp_probability = ff_amp_probability
@@ -33,7 +44,6 @@ class NSGA_II:
                  lowerRange,
                  upperRange,
                  numberOfRandomlyGeneratedPeptides,
-                 population_size,
                  offspring_size,
                  num_generations,
                  num_solutions_tournament,
@@ -43,7 +53,11 @@ class NSGA_II:
 
         Parameters
         ----------
-        population_size : int
+        lowerRange : int
+            The number of min individual length
+        upperRange : int
+            The number of max individual length
+        numberOfRandomlyGeneratedPeptides : int
             The number of individuals in the population.
         offspring_size : int
             The number of new individuals to create in each generation.
@@ -58,7 +72,6 @@ class NSGA_II:
         self.lowerRange = lowerRange
         self.upperRange = upperRange
         self.numberOfRandomlyGeneratedPeptides = numberOfRandomlyGeneratedPeptides
-        self.population_size = population_size
         self.offspring_size = offspring_size
         self.num_generations = num_generations
         self.num_solutions_tournament = num_solutions_tournament
@@ -69,18 +82,15 @@ class NSGA_II:
         """Use NSGA-II to find the best pareto front.
 
         Parameters
-        ----------
-        cities_to_visit : list
-            List of strings. Cities that need to be visited.
-
+        -------
         Returns
         -------
         List of pareto fronts.
-            Each pareto front is a list containing a tuple for each solution:
+            Each pareto front is a list containing 3 values for each solution:
             
-            (A path to visit all the cities,
-             total distance that will be travelled,
-             the number of breaches of the alphabetical order).
+            (Peptide aminoacids string,
+             Peptide string,
+             Value of fitness function that represent possibility of peptide having AMP properties).
         """
 
         generation_number = 1
@@ -126,6 +136,23 @@ class NSGA_II:
 
 
     def generate_random_population(self, lowerRange, upperRange, numberOfRandomlyGeneratedPeptides):
+        """Generate N random individuals within given range.
+
+                Use self.numberOfRandomlyGeneratedPeptides.
+
+                Parameters
+                -------
+                lowerRange : int
+                    Lower limit of sequence length.
+                upperRange : int
+                    Upper limit of sequence length.
+                numberOfRandomlyGeneratedPeptides : int
+                    Population size.
+
+                Returns
+                -------
+                List of self.Peptide objects.
+                """
         peptides = RandomGenerator.generate_random_peptides(lowerRange, upperRange, numberOfRandomlyGeneratedPeptides)
 
         list_of_peptide_objects = []
@@ -152,12 +179,12 @@ class NSGA_II:
         Parameters
         ----------
         population : list
-            List of self.Route objects.
+            List of self.Peptide objects.
     
         Returns
         -------
-        List of lists of self.Route objects.
-            E.g., [[Route#1, Route#2, ...], ...]
+        List of lists of self.Peptide objects.
+            E.g., [[Peptide#1, Peptide#2, ...], ...]
         """
     
         # Create a dictionary to store the count of each peptide.
@@ -193,7 +220,7 @@ class NSGA_II:
                 if i == j:
                     continue
     
-                # Check if one solutions dominates over the other, or they
+                # Check if one solution dominates over the other, or they
                 # are equal.
     
                 if population[i].ff_amp_probability >= population[j].ff_amp_probability:
@@ -264,7 +291,7 @@ class NSGA_II:
         Parameters
         ----------
         pareto_front : list
-            List of self.Route objects.
+            List of self.Peptide objects.
         """
         sorted_front_ff_amp_probability = sorted(
             pareto_front,
@@ -295,12 +322,12 @@ class NSGA_II:
         Parameters
         ----------
         population : list
-            List of self.Route objects.
+            List of self.Peptide objects.
 
         Returns
         -------
-        List of self.Route objects.
-            E.g., [Route#1, Route#2, ...]
+        List of self.Peptide objects.
+            E.g., [Peptide#1, Peptide#2, ...]
         """
 
         offspring = []
@@ -334,11 +361,11 @@ class NSGA_II:
         Parameters
         ----------
         population : list
-            List of self.Route objects.
+            List of self.Peptide objects.
 
         Returns
         -------
-        self.Route object.
+        self.Peptide object.
         """
         first_parent = self.tournament_select_parent(population).peptide_list
         second_parent = self.tournament_select_parent(population).peptide_list
@@ -361,11 +388,11 @@ class NSGA_II:
         Parameters
         ----------
         population : list
-            List of self.Route objects.
+            List of self.Peptide objects.
 
         Returns
         -------
-        self.Route object.
+        self.Peptide object.
         """
 
         # Select a random parent.
@@ -383,50 +410,68 @@ class NSGA_II:
         return random_parent
 
 
-    def mutate(self, child_city_list):
+    def mutate(self, child_peptide_list):
+        """Mutate a child.
+
+                This function modifies child peptide list and returns a new list.
+                There are four possible functions for modification.
+
+                Parameters
+                ----------
+                child_peptide_list : string,
+                    Peptide aminoacids.
+
+                Returns
+                -------
+                String, A modified peptide aminoacids.
+                """
+
         randInt = np.random.randint(0, 4)
-        print("Mutation type: ", randInt)
 
         if randInt == 0:
-            child_city_list = Mutations.add_amino_acid(child_city_list)
+            child_peptide_list = Mutations.add_amino_acid(child_peptide_list)
+            print("Mutation type: add_amino_acid")
         elif randInt == 1:
-            child_city_list = Mutations.delete_amino_acid(child_city_list)
+            child_peptide_list = Mutations.delete_amino_acid(child_peptide_list)
+            print("Mutation type: delete_amino_acid")
         elif randInt == 2:
-            child_city_list = Mutations.swap_amino_acids(child_city_list)
+            child_peptide_list = Mutations.swap_amino_acids(child_peptide_list)
+            print("Mutation type: swap_amino_acids")
         elif randInt == 3:
-            child_city_list = Mutations.exchange_amino_acid(child_city_list)
+            child_peptide_list = Mutations.exchange_amino_acid(child_peptide_list)
+            print("Mutation type: exchange_amino_acid")
 
-        return child_city_list
+        return child_peptide_list
 
 
     def next_generation(self, non_dominated_sorted_population):
         """Select individuals for the next generation.
 
-        Use self.population_size.
+        Use self.numberOfRandomlyGeneratedPeptides.
 
         Parameters
         ----------
-        non_dominated_sorted_population : List of lists of self.Route objects.
-            E.g., [[Route#1, Route#2, ...], ...]
+        non_dominated_sorted_population : List of lists of self.Peptide objects.
+            E.g., [[Peptide#1, Peptide#2, ...], ...]
 
         Returns
         -------
-        List of self.Route objects.
-            E.g., [Route#1, Route#2, ...]
+        List of self.Peptide objects.
+            E.g., [Peptide#1, Peptide#2, ...]
         """
 
         next_generation = []
 
         for pareto_front in non_dominated_sorted_population:
-            if len(pareto_front) + len(next_generation) <= self.population_size:
+            if len(pareto_front) + len(next_generation) <= self.numberOfRandomlyGeneratedPeptides:
                 # If the whole pareto front fits into next generation, add it.
                 next_generation.extend(pareto_front)
-            elif self.population_size - len(next_generation) > 0:
+            elif self.numberOfRandomlyGeneratedPeptides - len(next_generation) > 0:
                 # Otherwise, add the individuals with the highest crowding distance
                 # to preserve genetic diversity.
                 pareto_front.sort(key=lambda solution: solution.distance)
                 next_generation.extend(
-                    pareto_front[-(self.population_size-len(next_generation)):]
+                    pareto_front[-(self.numberOfRandomlyGeneratedPeptides-len(next_generation)):]
                 )
                 break
 
