@@ -4,21 +4,23 @@ from matplotlib.ticker import MaxNLocator
 import numpy as np
 
 def visualize_pareto_fronts(pareto_fronts):
-    # Force integer ticks on x-axis and y-axis.
+
     ax = plt.figure().gca()
     ax.xaxis.set_major_locator(MaxNLocator(integer=True))
     ax.yaxis.set_major_locator(MaxNLocator(integer=True))
 
     plt.title("Prikaz pareto fronti")
-    plt.xlabel("Peptide Index")
-    plt.ylabel("Peptide Value (ff_amp_probability)")
+    plt.xlabel("Iteracija/Indeks")
+    plt.ylabel("Vjerojatnost postojanja AMP svojstva (ff_amp_probability)")
 
-    colors = ["#"+''.join([np.random.choice(list('0123456789ABCDEF')) for _ in range(6)])
-              for _ in pareto_fronts]
+    colors = ["#" + ''.join([np.random.choice(list('0123456789ABCDEF')) for _ in range(6)])
+              for _ in range(len(pareto_fronts))]
 
     for front_index, front in enumerate(pareto_fronts):
-        for _, _, ff_amp_probability  in front:
+        for peptide in front:
+            _, _, ff_amp_probability = peptide
             plt.scatter(front_index, ff_amp_probability, c=colors[front_index])
+
     plt.show()
 
 
