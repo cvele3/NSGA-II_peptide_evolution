@@ -10,7 +10,7 @@ class NSGA_II:
 
     # Class Peptide is used to conveniently store all info about a solution.
     class Peptide:
-        def __init__(self, peptide_list, peptide_string, ff_amp_probability):
+        def __init__(self, peptide_list, peptide_string, ff_amp_probability, ff_peptide_length):
             """Store information about a single solution.
 
                        Parameters
@@ -27,6 +27,7 @@ class NSGA_II:
 
             self.peptide_list = peptide_list
             self.peptide_string = peptide_string
+            self.ff_peptide_length = ff_peptide_length
             self.ff_amp_probability = ff_amp_probability
 
             # When a solution is created, set its rank and crowding distance
@@ -133,7 +134,8 @@ class NSGA_II:
                     [
                         (solution.peptide_list,
                          solution.peptide_string,
-                         solution.ff_amp_probability) for solution in pareto_front
+                         solution.ff_amp_probability,
+                         solution.ff_peptide_length) for solution in pareto_front
                     ] for pareto_front in pareto_fronts
                 ]
 
@@ -171,7 +173,7 @@ class NSGA_II:
             os.remove('in.txt')
         
         for peptide_string, ff_amp_probability in peptide_and_ff_amp_probability:
-            list_of_peptide_objects.append(self.Peptide(list(peptide_string), peptide_string, float(ff_amp_probability)))
+            list_of_peptide_objects.append(self.Peptide(list(peptide_string), peptide_string, float(ff_amp_probability), len(peptide_string)))
 
         return list_of_peptide_objects
 
@@ -226,10 +228,10 @@ class NSGA_II:
                 # Check if one solution dominates over the other, or they
                 # are equal.
     
-                if population[i].ff_amp_probability >= population[j].ff_amp_probability:
+                if population[i].ff_peptide_length >= population[j].ff_peptide_length:
                     # In this case, population[i] dominates over population[j].
                     list_of_dominated_indices[i].append(j)
-                elif population[j].ff_amp_probability > population[i].ff_amp_probability:
+                elif population[j].ff_peptide_length > population[i].ff_peptide_length:
                     # In this case, population[j] dominates over population[i].
                     domination_count[i] += 1
     
@@ -296,25 +298,25 @@ class NSGA_II:
         pareto_front : list
             List of self.Peptide objects.
         """
-        sorted_front_ff_amp_probability = sorted(
+        sorted_front_ff_peptide_length = sorted(
             pareto_front,
-            key=lambda solution: solution.ff_amp_probability
+            key=lambda solution: solution.ff_peptide_length
         )
 
         # First and last solution in the sorted arrays have infinite
         # crowding distance because they only have one neighbour.
-        sorted_front_ff_amp_probability[0].distance = np.inf
-        sorted_front_ff_amp_probability[-1].distance = np.inf
+        sorted_front_ff_peptide_length[0].distance = np.inf
+        sorted_front_ff_peptide_length[-1].distance = np.inf
 
         # Calculate maximum distance for each fitness function separately.
-        max_ff_amp_probability = sorted_front_ff_amp_probability[-1].ff_amp_probability - sorted_front_ff_amp_probability[0].ff_amp_probability
+        max_ff_peptide_length = sorted_front_ff_peptide_length[-1].ff_peptide_length - sorted_front_ff_peptide_length[0].ff_peptide_length
 
-        if max_ff_amp_probability <= 0:
-            max_ff_amp_probability = 1
+        if max_ff_peptide_length <= 0:
+            max_ff_peptide_length = 1
 
         for i in range(1, len(pareto_front) - 1):
-            # Contribution of ff_amp_probability
-            sorted_front_ff_amp_probability[i].distance += (sorted_front_ff_amp_probability[i+1].ff_amp_probability - sorted_front_ff_amp_probability[i-1].ff_amp_probability) / max_ff_amp_probability
+            # Contribution of ff_peptide_length
+            sorted_front_ff_peptide_length[i].distance += (sorted_front_ff_peptide_length[i+1].ff_peptide_length - sorted_front_ff_peptide_length[i-1].ff_peptide_length) / max_ff_peptide_length
 
 
     def generate_offspring(self, population):
@@ -353,7 +355,7 @@ class NSGA_II:
 
         for peptide_string, ff_amp_probability in peptide_and_ff_amp_probability:
             print("Peptide: ", peptide_string)
-            offspring_peptides.append(self.Peptide(list(peptide_string), peptide_string, float(ff_amp_probability)))
+            offspring_peptides.append(self.Peptide(list(peptide_string), peptide_string, float(ff_amp_probability), len(peptide_string)))
 
         return offspring_peptides
 
