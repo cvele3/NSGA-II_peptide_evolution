@@ -313,7 +313,7 @@ class NSGA_II:
             max_ff_amp_probability = 1
 
         for i in range(1, len(pareto_front) - 1):
-            # Contribution of ff_path_length
+            # Contribution of ff_amp_probability
             sorted_front_ff_amp_probability[i].distance += (sorted_front_ff_amp_probability[i+1].ff_amp_probability - sorted_front_ff_amp_probability[i-1].ff_amp_probability) / max_ff_amp_probability
 
 
