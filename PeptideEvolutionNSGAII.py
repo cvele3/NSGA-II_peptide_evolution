@@ -10,7 +10,7 @@ class NSGA_II:
 
     # Class Peptide is used to conveniently store all info about a solution.
     class Peptide:
-        def __init__(self, peptide_list, peptide_string, ff_amp_probability):
+        def __init__(self, peptide_list, peptide_string, ff_amp_probability, ff_toxicity):
             """Store information about a single solution.
 
                        Parameters
@@ -22,12 +22,15 @@ class NSGA_II:
                            Peptide label.
                        ff_amp_probability : float
                            The possibility that antimicrobial peptide have antimicrobial properties.
+                       ff_toxicity : float
+                           The SVM score of toxicity of the peptide.
 
                        """
 
             self.peptide_list = peptide_list
             self.peptide_string = peptide_string
             self.ff_amp_probability = ff_amp_probability
+            self.ff_toxicity = ff_toxicity
 
             # When a solution is created, set its rank and crowding distance
             # to initial values.
@@ -130,12 +133,13 @@ class NSGA_II:
 
         pareto_fronts = self.perform_non_dominated_sort(population)
         return [
-                    [
-                        (solution.peptide_list,
-                         solution.peptide_string,
-                         solution.ff_amp_probability) for solution in pareto_front
-                    ] for pareto_front in pareto_fronts
-                ]
+            [
+                (solution.peptide_list,
+                 solution.peptide_string,
+                 solution.ff_amp_probability,
+                 solution.ff_toxicity) for solution in pareto_front
+            ] for pareto_front in pareto_fronts
+        ]
 
 
     def generate_random_population(self, lowerRange, upperRange, population_size):
@@ -167,11 +171,13 @@ class NSGA_II:
 
 
         peptide_and_ff_amp_probability = FitnessFunctionScraper.scrape_fitness_function()
+        toxicity = FitnessFunctionScraper.toxicity()
+        
         if os.path.exists('in.txt'):
             os.remove('in.txt')
-        
-        for peptide_string, ff_amp_probability in peptide_and_ff_amp_probability:
-            list_of_peptide_objects.append(self.Peptide(list(peptide_string), peptide_string, float(ff_amp_probability)))
+
+        for (peptide_string, ff_amp_probability), (peptide_id, svm_score, prediction) in zip(peptide_and_ff_amp_probability, toxicity):
+            list_of_peptide_objects.append(self.Peptide(list(peptide_string), peptide_string, float(ff_amp_probability), float(svm_score)))
 
         return list_of_peptide_objects
 
@@ -226,10 +232,13 @@ class NSGA_II:
                 # Check if one solution dominates over the other, or they
                 # are equal.
     
-                if population[i].ff_amp_probability >= population[j].ff_amp_probability:
+                amp_prob_diff = np.sign(population[i].ff_amp_probability - population[j].ff_amp_probability)
+                toxicity_diff = np.sign(population[i].ff_toxicity - population[j].ff_toxicity)
+
+                if amp_prob_diff >= 0 and toxicity_diff <= 0:
                     # In this case, population[i] dominates over population[j].
                     list_of_dominated_indices[i].append(j)
-                elif population[j].ff_amp_probability > population[i].ff_amp_probability:
+                elif amp_prob_diff < 0 and toxicity_diff > 0:
                     # In this case, population[j] dominates over population[i].
                     domination_count[i] += 1
     
@@ -301,21 +310,34 @@ class NSGA_II:
             key=lambda solution: solution.ff_amp_probability
         )
 
+        sorted_front_ff_toxicity = sorted(
+            pareto_front,
+            key=lambda solution: solution.ff_toxicity
+        )
+
         # First and last solution in the sorted arrays have infinite
         # crowding distance because they only have one neighbour.
         sorted_front_ff_amp_probability[0].distance = np.inf
         sorted_front_ff_amp_probability[-1].distance = np.inf
 
+        sorted_front_ff_toxicity[0].distance = np.inf
+        sorted_front_ff_toxicity[-1].distance = np.inf
+
         # Calculate maximum distance for each fitness function separately.
         max_ff_amp_probability = sorted_front_ff_amp_probability[-1].ff_amp_probability - sorted_front_ff_amp_probability[0].ff_amp_probability
+        max_ff_toxicity = sorted_front_ff_toxicity[-1].ff_toxicity - sorted_front_ff_toxicity[0].ff_toxicity
+
 
         if max_ff_amp_probability <= 0:
             max_ff_amp_probability = 1
 
+        if max_ff_toxicity <= 0:
+            max_ff_toxicity = 1
+
         for i in range(1, len(pareto_front) - 1):
             # Contribution of ff_path_length
             sorted_front_ff_amp_probability[i].distance += (sorted_front_ff_amp_probability[i+1].ff_amp_probability - sorted_front_ff_amp_probability[i-1].ff_amp_probability) / max_ff_amp_probability
-
+            sorted_front_ff_toxicity[i].distance += (sorted_front_ff_toxicity[i+1].ff_toxicity - sorted_front_ff_toxicity[i-1].ff_toxicity) / max_ff_toxicity
 
     def generate_offspring(self, population):
         """Generate offspring.
@@ -347,13 +369,15 @@ class NSGA_II:
 
 
         peptide_and_ff_amp_probability = FitnessFunctionScraper.scrape_fitness_function()
+        toxicity = FitnessFunctionScraper.toxicity()
         
         if os.path.exists('in.txt'):
             os.remove('in.txt')
 
-        for peptide_string, ff_amp_probability in peptide_and_ff_amp_probability:
+        for (peptide_string, ff_amp_probability), (peptide_id, svm_score, prediction) in zip(peptide_and_ff_amp_probability, toxicity):
             print("Peptide: ", peptide_string)
-            offspring_peptides.append(self.Peptide(list(peptide_string), peptide_string, float(ff_amp_probability)))
+            print("Toxicity: ", svm_score, prediction)
+            offspring_peptides.append(self.Peptide(list(peptide_string), peptide_string, float(ff_amp_probability), float(svm_score)))
 
         return offspring_peptides
 
