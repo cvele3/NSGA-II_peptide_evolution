@@ -10,7 +10,7 @@ def visualize_pareto_fronts(pareto_fronts):
     ax.yaxis.set_major_locator(MaxNLocator(integer=True))
 
     plt.title("Prikaz pareto fronti")
-    plt.xlabel("Iteracija/Indeks")
+    plt.xlabel("Pareto fronta")
     plt.ylabel("Vjerojatnost postojanja AMP svojstva (ff_amp_probability)")
 
     colors = ["#" + ''.join([np.random.choice(list('0123456789ABCDEF')) for _ in range(6)])
@@ -18,7 +18,7 @@ def visualize_pareto_fronts(pareto_fronts):
 
     for front_index, front in enumerate(pareto_fronts):
         for peptide in front:
-            _, _, ff_amp_probability = peptide
+            _, _, ff_amp_probability, ff_length = peptide
             plt.scatter(front_index, ff_amp_probability, c=colors[front_index])
 
     plt.show()
