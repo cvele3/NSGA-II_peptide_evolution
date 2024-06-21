@@ -231,14 +231,23 @@ class NSGA_II:
     
                 # Check if one solution dominates over the other, or they
                 # are equal.
+
+                # amp_weight = 0.7
+                # toxicity_weight = 0.3
     
+                # amp_prob_diff = amp_weight * (population[i].ff_amp_probability - population[j].ff_amp_probability)
+                # toxicity_diff = toxicity_weight * (population[i].ff_toxicity - population[j].ff_toxicity)
                 amp_prob_diff = np.sign(population[i].ff_amp_probability - population[j].ff_amp_probability)
                 toxicity_diff = np.sign(population[i].ff_toxicity - population[j].ff_toxicity)
+                # if amp_prob_diff >= 0 and toxicity_diff <= 0:
+                # elif amp_prob_diff < 0 and toxicity_diff > 0:
 
-                if amp_prob_diff >= 0 and toxicity_diff <= 0:
+
+
+                if (amp_prob_diff > 0 and toxicity_diff >= 0) or (amp_prob_diff >= 0 and toxicity_diff > 0):
                     # In this case, population[i] dominates over population[j].
                     list_of_dominated_indices[i].append(j)
-                elif amp_prob_diff < 0 and toxicity_diff > 0:
+                elif amp_prob_diff < 0 and toxicity_diff < 0:
                     # In this case, population[j] dominates over population[i].
                     domination_count[i] += 1
     

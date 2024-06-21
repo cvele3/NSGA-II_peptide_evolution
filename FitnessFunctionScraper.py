@@ -96,7 +96,7 @@ def toxicity():
                 toxic = cols[3].text
 
                 # Append the values to the list
-                peptide_scores.append((peptide_id, svm_score, toxic))
+                peptide_scores.append((peptide_id, float(svm_score) * (-1.0), toxic))
 
         # Return the list of peptide id and SVM score values
         return peptide_scores
